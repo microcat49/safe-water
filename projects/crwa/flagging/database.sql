@@ -14,6 +14,37 @@ SET time_zone = "+00:00";
 -- Database: `flagging`
 --
 
+
+CREATE TABLE `crwa_notification_usgs` (
+  `id` int(11) NOT NULL,
+  `datetime` datetime NOT NULL,
+  `site` varchar(255) NOT NULL,
+  `flow_cfs` double NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+
+CREATE TABLE `crwa_notification_hobolink` (
+  `id` int(11) NOT NULL DEFAULT '0',
+  `site` varchar(255) NOT NULL,
+  `datetime` varchar(255) NOT NULL,
+  `watertemp_F` double DEFAULT NULL,
+  `pressure_inHg` double DEFAULT NULL,
+  `par_uE` double DEFAULT NULL,
+  `rain_in` double DEFAULT NULL,
+  `airtemp_F` double DEFAULT NULL,
+  `relhumidity_pct` double DEFAULT NULL,
+  `dewpoint_F` double DEFAULT NULL,
+  `windspeed_mph` double DEFAULT NULL,
+  `gustspeed_mph` double DEFAULT NULL,
+  `winddir_deg` double DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+
+
 -- --------------------------------------------------------
 
 --
@@ -86,4 +117,3 @@ CREATE TABLE `crwa_notification.rawdata` (
   `winddir_deg` double DEFAULT NULL,
   `flow_cfs` double DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
