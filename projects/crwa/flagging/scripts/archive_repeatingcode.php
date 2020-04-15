@@ -56,7 +56,8 @@ function archive_OnsetRX3000($name,$repost) {
 
 	//query database to get last date
 	$arc_lastdate = mktime(0, 0, 0, 0, 0, 0);
-	$datatable = "crwa_notification.rawdata";
+	$datatable = "crwa_notification_hobolink";
+	// $datatable = "crwa_notification.rawdata";
 
 	// $rawdb = new mysqli("notification.crwa.org", $dbuser, $dbpw, "crwa_notification");
 	$rawdb = new mysqli(
@@ -324,7 +325,8 @@ function archive_USGSflow($name) {
 
 		//query database to get last date
 		$arc_lastdate = mktime(0, 0, 0, 0, 0, 0);
-		$datatable = "crwa_notification.rawdata";
+		// $datatable = "crwa_notification.rawdata";
+		$datatable = "crwa_notification_usgs";
 		// $rawdb = new mysqli("notification.crwa.org", $dbuser, $dbpw, "crwa_notification");
 		$rawdb = new mysqli(
 			"localhost",
@@ -386,6 +388,7 @@ function archive_USGSflow($name) {
 							if (($thistime > $arc_lastdate) && ($datavals[$usg_flowcol] != "")) {
 								$thistimestring = strftime("%Y-%m-%d %H:%M:%S", $thistime);
 								$sql = "INSERT INTO `$datatable` (site,datetime,flow_cfs) VALUES 	('$site',TIMESTAMP('$thistimestring'),trim($datavals[$usg_flowcol]))";
+								var_dump($sql);
 								// print($sql . "<br><br>");
 								$rawdb->query($sql); //trim removes hidden \r\n
 							}

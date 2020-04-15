@@ -35,17 +35,19 @@ function archive_wqmodel($repost) {
 			// fwrite($log_handle,"C." . $corrections . "." . $specialmsg . ",") ;
 			// print("OK<br>");
 			/////////////////////
-
-			// TESTED AND WORKS
-			// print("archive_USGSflow ... ");
-			// if (archive_USGSflow("Waltham") == FALSE) {
-			// 	$return_val = FALSE ;
-			// 	if ($specialmsg == "") {$specialmsg = " Error in (archive_USGSflow(Waltham))." ;}
-			// }
-			// fwrite($log_handle,"W." . $corrections . "." . $specialmsg . ",") ;
-			// print("OK<br>");
 			// exit();
 
+			// TESTED AND WORKS
+			print("archive_USGSflow ... ");
+			if (archive_USGSflow("Waltham") == FALSE) {
+				$return_val = FALSE ;
+				if ($specialmsg == "") {$specialmsg = " Error in (archive_USGSflow(Waltham))." ;}
+			}
+			fwrite($log_handle,"W." . $corrections . "." . $specialmsg . ",") ;
+			print("OK<br>");
+			// exit();
+
+			exit();
 			print("archive_boatingmodel ... ");
 			if (archive_boatingmodel() == FALSE) {
 				$return_val = FALSE ;
@@ -213,7 +215,8 @@ function archive_boatingmodel() {
 		$statement = $wqdb->query("SELECT datetime,watertemp_C,airtemp_C,rain_in,raindays,windspeed_mph,flow_cfs,par_uE,cso_CP,cyano_NewtonYC,cyano_WatertownYC,cyano_CommRowing,cyano_CRCK,cyano_HarvardWeld,cyano_RiversideBC,cyano_CRYC,cyano_UnionBC,cyano_CommBoating,cyano_CRCKKendall FROM $modeltable WHERE location='$loc' AND datetime<TIMESTAMP('$stopdate') ORDER BY datetime");
 		//$statement = $wqdb->query("SELECT datetime,watertemp_C,rain_in,raindays,windspeed_mph,flow_cfs,par_uE,cso_CP,cyano_NewtonYC,cyano_WatertownYC,cyano_CommRowing,cyano_CRCK,cyano_HarvardWeld,cyano_RiversideBC,cyano_CRYC,cyano_UnionBC,cyano_CommBoating,cyano_CRCKKendall FROM $modeltable WHERE location='$loc' AND datetime<TIMESTAMP('$stopdate') ORDER BY datetime");
 		while($row = $statement->fetch_assoc()){
-			var_dump($row);
+			exit();
+			// var_dump($row);
 			$timeset[$arraycount] = strtotime($row['datetime']) ;
 			$wtmpset[$arraycount] = $row['watertemp_C'] ; //already in Celsius
 			$atmpset[$arraycount] = $row['airtemp_C'] ; //already in Celsius ? 2015 update
@@ -294,6 +297,9 @@ function archive_boatingmodel() {
 		$site = "CharlesCB";
 		$starttimestring = strftime("%Y-%m-%d %H:%M:%S", $starttime);
 		// 2015 update
+
+		// SELECT ALL DATA WITHIN LAST 24 HOURS MYSQL EXAMPLE.
+		// select * from crwa_notification_usgs where datetime >= now() - INTERVAL 1 DAY
 		$statement = $wqdb->query("SELECT datetime,watertemp_F,airtemp_F, rain_in,windspeed_mph,par_uE FROM $datatable WHERE site='$site' AND datetime>=TIMESTAMP('$starttimestring') ORDER BY datetime");
 		// $statement = $wqdb->query("SELECT datetime,watertemp_F,rain_in,windspeed_mph,par_uE FROM $datatable WHERE site='$site' AND datetime>=TIMESTAMP('$starttimestring') ORDER BY datetime");
 		while($row = $statement->fetch_assoc()){
