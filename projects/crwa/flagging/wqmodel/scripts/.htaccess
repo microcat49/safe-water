@@ -1,0 +1,4 @@
+AuthUserFile "/home1/crwa/.htpasswds/public_html/notification/scripts/passwd"
+AuthType Basic
+AuthName "water quality scripts"
+require valid-user

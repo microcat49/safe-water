@@ -1,0 +1,4 @@
+AuthName "backend"
+AuthUserFile "/home1/crwa/.htpasswds/public_html/notification/backend/passwd"
+AuthType Basic
+require valid-user

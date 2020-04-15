@@ -1,0 +1,2 @@
+AuthName "Model"
+AuthUserFile "/home1/crwa/.htpasswds/public_html/notification/wqmodel/passwd"
