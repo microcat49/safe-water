@@ -240,8 +240,10 @@ function read_ToDB($rawdb,$paramlist,$name,$line,$arc_lastdate,$datatable,$site,
 						]);
 					break;
 			}
+
 			return $rawdb->query("INSERT INTO `$datatable` (site,datetime,". $paramlist .") VALUES
-				('$site',TIMESTAMP('$thistimestring'),". $vallist .")");
+				('$site',TIMESTAMP('$thistimestring'),". $vallist .")") or die(
+			mysqli_error($rawdb));
 		}
 	}
 }

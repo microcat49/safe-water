@@ -45,9 +45,9 @@
 		// read_boatingmodel is in ../scripts/archive_wqmodel.php
 		// alternate function that uses HOBOLINK data is read_boatingmodel2()
 		//$arrayset = read_boatingmodel($days) ;
-		$arrayset = read_boatingmodel2($days) ;
-		var_dump($arrayset);
-		exit();
+		$arrayset = read_boatingmodel($days) ;
+		// var_dump($arrayset);
+		// exit();
 		//$startdate = $arrayset[0] ;
 		//$enddate = $arrayset[1] ;
 		$timeset = $arrayset[2] ;

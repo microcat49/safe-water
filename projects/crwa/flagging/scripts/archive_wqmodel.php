@@ -27,13 +27,13 @@ function archive_wqmodel($repost) {
 		$return_val = TRUE ;
 
 			// TESTED AND WORKS
-			// print("archive_OnsetRX3000 ... ");
-			// if (archive_OnsetRX3000("CommunityBoating",$repost) == FALSE) {
-			// 	$return_val = FALSE ;
-			// 	if ($specialmsg == "") {$specialmsg = " Error in (archive_OnsetRX3000(Community Boating).";}
-			// }
-			// fwrite($log_handle,"C." . $corrections . "." . $specialmsg . ",") ;
-			// print("OK<br>");
+			print("archive_OnsetRX3000 ... ");
+			if (archive_OnsetRX3000("CommunityBoating",$repost) == FALSE) {
+				$return_val = FALSE ;
+				if ($specialmsg == "") {$specialmsg = " Error in (archive_OnsetRX3000(Community Boating).";}
+			}
+			fwrite($log_handle,"C." . $corrections . "." . $specialmsg . ",") ;
+			print("OK<br>");
 			/////////////////////
 			// exit();
 
@@ -47,14 +47,15 @@ function archive_wqmodel($repost) {
 			print("OK<br>");
 			// exit();
 
-			exit();
+
 			print("archive_boatingmodel ... ");
-			if (archive_boatingmodel() == FALSE) {
+			if (archive_boatingmodel2() == FALSE) {
 				$return_val = FALSE ;
 				if ($specialmsg == "") {$specialmsg = " Error in (archive_boatingmodel)." ;}
 			}
 			fwrite($log_handle,"BM." . $specialmsg . ",") ;
 			print("OK<br>");
+			exit();
 
 		if ($return_val==TRUE) {
 			echo "Archiving job finished successfully. " . date("H:i:s") ;
@@ -150,6 +151,335 @@ function boatingmodel() {
 // END OF CALCULATIONS *********************************************************
 }
 
+
+function archive_boatingmodel2() {
+	$dbc = new mysqli(
+		"localhost",
+		"crwa",
+		"crwatest",
+		"flagging",
+	);
+
+	function singlerow_sql_result($dbc,$sql) {
+		$sth = $dbc->query($sql) or die(mysqli_error($dbc));
+		$row = $sth->fetch_assoc();
+		if ( ! $row ) {
+			die("No rows returned from : <br> " . $sql . "<br><br>");
+		}
+		$sth->free();
+		return $row;
+	}
+
+	// TIME CHECK #1: Only proceed if the last calculation was based on data
+	// from 10+ minutes ago.
+	$sql = "
+		select count(*) as count
+		from crwa_notification_model_results
+		where datetime >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+	";
+	// if (singlerow_sql_result($dbc, $sql)['count']>0) {
+	// 	die("Model calculations have been successfully executed within " .
+	// 		" the last 10 minutes." .
+	// 		"<br>Please wait before running again.");
+	// }
+
+	// initialize model parameters
+	$params = Array(); // model parameter inputs
+	// location/site name for hobolink data
+	$hobo_site = "CharlesCB";
+	// location/site name for usgs data
+	$usgs_site = "CharlesWalthamUSGS";
+
+	// get most recent measurements from hobolink
+	$sql =
+	"
+	select
+		datetime as hobolink_datetime,
+		watertemp_F,
+		airtemp_F,
+		rain_in,
+		windspeed_mph,
+		par_uE
+	from crwa_notification_hobolink
+	where site = \"$hobo_site\"
+	order by datetime desc
+	LIMIT 1
+	";
+	$params = array_merge($params, singlerow_sql_result($dbc, $sql));
+	$params['hobotime'] = strtotime($params['hobolink_datetime']);
+
+	// get most recent results from usgs
+	$sql =
+	"
+	select
+		datetime as usgs_datetime,
+		flow_cfs
+	from crwa_notification_usgs
+	where site = \"$usgs_site\"
+	order by datetime desc
+	LIMIT 1
+	";
+	$params = array_merge($params, singlerow_sql_result($dbc, $sql));
+	$params['usgstime'] = strtotime($params['usgs_datetime']);
+
+	// TIME CHECK #2:
+	// make sure most recent hobolink and usgs results are from the same day
+	if (
+		(date('Y', $params['hobotime']) != date('Y', $params['usgstime'])) ||
+		(date('m', $params['hobotime']) != date('m', $params['usgstime'])) ||
+		(date('d', $params['hobotime']) != date('d', $params['usgstime']))
+ 	) {
+		$msg = 	"Error: USGS and HOBOlink data are not in sync.<br>" .
+				"Most recent HOBOLink data is from " .
+				$params['hobolink_datetime'] . ".<br>" .
+				"Most recent USGS data is from " .
+				$params['usgs_datetime'] . ".<br>" .
+				"Data from the say day must exist for both.";
+		die($msg);
+	}
+
+	// 24 hour parameters from hobolink data
+	$sql =
+	"
+	select
+	min(datetime) as hobo_D1_earliest_datetime,
+	avg(watertemp_F) as WtmpD1,
+	avg(airtemp_F) as AtmpD1,
+	avg(windspeed_mph) as WindD1
+	from crwa_notification_hobolink
+	where datetime > DATE_SUB(NOW(), INTERVAL 24 HOUR) and datetime <= NOW()
+	and site = \"$hobo_site\"
+	";
+	$params = array_merge($params, singlerow_sql_result($dbc, $sql));
+
+	// 48 hour parameters from hobolink data
+	$sql =
+	"
+	select
+	max(datetime) as hobo_D2_latest_datetime,
+	min(datetime) as hobo_D2_earliest_datetime,
+	avg(par_uE) as PARD2,
+	sum(rain_in) as RainD2
+	from crwa_notification_hobolink
+	where datetime > DATE_SUB(NOW(), INTERVAL 48 HOUR) and datetime <= NOW()
+	and site = \"$hobo_site\"
+	";
+	$params = array_merge($params, singlerow_sql_result($dbc, $sql));
+
+	// 7 day parameters from hobolink data
+	$sql =
+	"
+	select
+	max(datetime) as hobo_D7_latest_datetime,
+	min(datetime) as hobo_D7_earliest_datetime,
+	sum(rain_in) as RainD7
+	from crwa_notification_hobolink
+	where datetime > DATE_SUB(NOW(), INTERVAL 168 HOUR) and datetime <= NOW()
+	and site = \"$hobo_site\"
+	";
+	$params = array_merge($params, singlerow_sql_result($dbc, $sql));
+
+	// 24 hour parameters from usgs data
+	$sql =
+	"
+	select
+	max(datetime) as usgs_D1_latest_datetime,
+	min(datetime) as usgs_D1_earliest_datetime,
+	avg(flow_cfs) as FlowD1
+	from crwa_notification_usgs
+	where datetime > DATE_SUB(NOW(), INTERVAL 24 HOUR) and datetime <= NOW()
+	and site = \"$usgs_site\"
+	";
+	$params = array_merge($params, singlerow_sql_result($dbc, $sql));
+
+	// 48 hour parameters from usgs data
+	$sql =
+	"
+	select
+	max(datetime) as usgs_D2_latest_datetime,
+	min(datetime) as usgs_D2_earliest_datetime,
+	avg(flow_cfs) as FlowD2
+	from crwa_notification_usgs
+	where datetime >= DATE_SUB(NOW(), INTERVAL 48 HOUR) and datetime <= NOW()
+	and site = \"$usgs_site\"
+	";
+	$params = array_merge($params, singlerow_sql_result($dbc, $sql));
+
+	// select hours since last rainfall
+	$sql =
+	"
+	# 2. Calculate the hours (with minute resolution) since the last time
+	#    whose cumulative 24 hour rainfall was >= 0.1in, order by the hours
+	#    and select the first row, which is the smallest number of hours since
+	#    the last time that had a >0.1in cumulative 24hr rainfall.
+	#    See original code on which this calculation is based.
+	#    So only 1 row is returned here (see LIMIT 1 below).
+	select
+		-TIMESTAMPDIFF(MINUTE, now(), datetime)/60 as HOURS,
+		24hr_cumulative_rainfall_at_HOURS
+	from ( #NESTED
+	# 1. Calculate the last 24 hours of cumulative rainfall for every row
+	#    using a self join
+	select
+		n.datetime as datetime,
+		sum(p.rain_in) as 24hr_cumulative_rainfall_at_HOURS
+	from crwa_notification_hobolink as n
+	join crwa_notification_hobolink as p
+	on
+		p.datetime >= DATE_SUB(n.datetime, INTERVAL 24 HOUR)
+		and p.datetime <= n.datetime
+	where n.site = \"$hobo_site\"
+	and p.site = \"$hobo_site\"
+	group by n.datetime
+	order by n.datetime
+	) as x
+	where 24hr_cumulative_rainfall_at_HOURS >= 0.1
+	order by HOURS asc LIMIT 1
+	";
+	$params = array_merge($params, singlerow_sql_result($dbc, $sql));
+
+	// -------------------------------------------------------------------------
+	// OLD code block that determines HOURS SINCE LAST RAINFALL
+	// This is all replaced by doing calculation in SQL above.
+	// -------------------------------------------------------------------------
+	// inside a loop that runs through HOBOLINK rows selected from database
+	// row number is $indx, rows are hourly.
+	// vvv If the sum of the last 24 hours of rain_in data >= 0.1
+	//if (array_sum(array_slice($rainset,$indx-23,24))>=0.1) {
+		// days since last rain is zero (b/c in last 24 hours)
+		//	$days = 0 ;
+	//} else {
+		// increment days by one hour
+		//	$days = $days + 1/24 ;
+	//}
+	// Store incrementing/reseting $days for this row
+	//$daysset[$indx] = $days ;
+	// -------------------------------------------------------------------------
+
+	// model calculations
+	$results = Array();
+
+	//calculate model results using updated 2015 model
+	$results['li_conc_LF_cfu'] =
+		exp(
+			2.7144
+			+0.65*log($params['FlowD1'])
+			+1.68*$params['RainD2']
+			-0.071*($params['WtmpD1'])
+			-0.29*$params['RainD7']
+			-0.09*$params['WindD1']
+		) ;
+
+	$lg_LF =
+		-3.184
+		+3.936*$params['RainD2']
+		-1.62*$params['RainD7']
+		+1.2798*log($params['FlowD1'])
+		-0.3397*$params['WindD1']
+		-0.2112*($params['WtmpD1']);
+	$results['lg_prb_LF_pct'] = exp($lg_LF) / (1 + exp($lg_LF));
+
+	$lg_R2 =
+		0.2629
+		+0.0444*($params['WtmpD1']*9/5+32)
+		-0.0364*($params['AtmpD1']*9/5+32)
+		+0.0014*$params['HOURS']
+		-0.226*log($params['HOURS']
+		+0.0001);
+	$results['lg_prb_R2_pct'] = exp($lg_R2) / (1 + exp($lg_R2));
+
+	$lg_R3 =
+		1.4144
+		+0.0255*($params['WtmpD1']*9/5+32)
+		-0.0007*$params['PARD2']
+		+0.0009*$params['HOURS']
+		-0.3022*log($params['HOURS']+0.0001)
+		+0.0015*$params['FlowD2']
+		-0.3957*log($params['FlowD2']);
+	$results['lg_prb_R3_pct'] = exp($lg_R3) / (1 + exp($lg_R3));
+
+	$lg_R4 =
+		3.6513
+		+0.0254*($params['WtmpD1']*9/5+32)
+		-0.6636*log($params['PARD2'])
+		-0.0014*$params['HOURS']
+		-0.3428*log($params['HOURS']+0.0001);
+	$results['lg_prb_R4_pct'] = exp($lg_R4) / (1 + exp($lg_R4));
+
+	# map all values for database into a single structure so they can be
+	# traced easily.
+
+	$insert_data = Array(
+		'location' =>			"Charles",
+		// date/timestamp for the most recent hobolink data used
+		'datetime' =>			date("Y-m-d H:i:s"),
+		'hobolink_datetime' =>	$params['hobolink_datetime'],
+		'usgs_datetime' =>		$params['usgs_datetime'],
+		'lg_prb_R2_pct' =>		$results['lg_prb_R2_pct'],
+		'lg_prb_R3_pct' =>		$results['lg_prb_R3_pct'],
+		'lg_prb_R4_pct' =>		$results['lg_prb_R4_pct'],
+		'li_conc_LF_cfu' =>		$results['li_conc_LF_cfu'],
+		'lg_prb_LF_pct' =>		$results['lg_prb_LF_pct'],
+		'cso_CP' =>				0,
+		'cyano_NewtonYC' =>		0,
+		'cyano_WatertownYC' =>	0,
+		'cyano_CommRowing' =>	0,
+		'cyano_CRCK' =>			0,
+		'cyano_HarvardWeld' =>	0,
+		'cyano_RiversideBC' =>	0,
+		'cyano_CRYC' =>			0,
+		'cyano_UnionBC' =>		0,
+		'cyano_CommBoating' =>	0,
+		'cyano_CRCKKendall' =>	0,
+		'watertemp_F' =>		$params['watertemp_F'],
+		'airtemp_F' =>			$params['airtemp_F'],
+		'rain_in' =>			$params['rain_in'],
+		'windspeed_mph' =>		$params['windspeed_mph'],
+		'par_uE' =>				$params['par_uE'],
+		'flow_cfs' =>			$params['flow_cfs'],
+		'WtmpD1' =>				$params['WtmpD1'],
+		'AtmpD1' =>				$params['AtmpD1'],
+		'WindD1' =>				$params['WindD1'],
+		'PARD2' =>				$params['PARD2'],
+		'RainD2' =>				$params['RainD2'],
+		'RainD7' =>				$params['RainD7'],
+		'FlowD1' =>				$params['FlowD1'],
+		'FlowD2' =>				$params['FlowD2'],
+		'HOURS' =>				$params['HOURS'],
+		'24hr_cumulative_rainfall_at_HOURS' =>
+			$params['24hr_cumulative_rainfall_at_HOURS']
+	);
+
+	// split into ordered keys, data and type for insert binding
+	$keys = array_keys($insert_data);
+	$data = Array();
+	$dtype = Array();
+	foreach ($keys as $k) {
+		// data types for specific columns
+		if (
+			$k == "location" || $k == "datetime" ||
+			$k == "hobolink_datetime" ||
+			$k == "usgs_datetime"
+		) { array_push($dtype,'s'); }
+		else { array_push($dtype,'d'); }
+		// value
+		array_push($data,$insert_data[$k]);
+	}
+
+	// insert
+	$sql = "
+		INSERT IGNORE INTO crwa_notification_model_results (" .
+		join(',',$keys) .
+		") VALUES (" .
+		join( ',',array_fill(0, count($keys), '?') ) .
+		")";
+	$sth = $dbc->prepare($sql) or die (mysqli_error($dbc));
+	/// "..." is an unpacking operator like python's "*list"
+	$sth->bind_param(join('',$dtype), ...$data);
+	$sth->execute() or die (mysqli_error($dbc));
+	$dbc->close();
+	return true;
+}
 
 // calculations model
 function archive_boatingmodel() {

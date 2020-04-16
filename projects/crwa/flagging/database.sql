@@ -1,34 +1,9 @@
--- phpMyAdmin SQL Dump
--- version 4.9.0.1
--- https://www.phpmyadmin.net/
---
--- Host: localhost:8889
--- Generation Time: Apr 15, 2020 at 12:16 AM
--- Server version: 5.7.26
--- PHP Version: 7.3.8
-
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-SET time_zone = "+00:00";
-
---
--- Database: `flagging`
---
-
-
-CREATE TABLE `crwa_notification_usgs` (
-  `id` int(11) NOT NULL,
-  `datetime` datetime NOT NULL,
-  `site` varchar(255) NOT NULL,
-  `flow_cfs` double NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-
 
 
 CREATE TABLE `crwa_notification_hobolink` (
-  `id` int(11) NOT NULL DEFAULT '0',
+  `id` int(11) NOT NULL,
   `site` varchar(255) NOT NULL,
-  `datetime` varchar(255) NOT NULL,
+  `datetime` datetime NOT NULL,
   `watertemp_F` double DEFAULT NULL,
   `pressure_inHg` double DEFAULT NULL,
   `par_uE` double DEFAULT NULL,
@@ -42,6 +17,54 @@ CREATE TABLE `crwa_notification_hobolink` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
+
+CREATE TABLE `crwa_notification_usgs` (
+  `id` int(11) NOT NULL,
+  `datetime` datetime NOT NULL,
+  `site` varchar(255) NOT NULL,
+  `flow_cfs` double NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+CREATE TABLE `crwa_notification_model_results` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `location` varchar(255) DEFAULT NULL,
+  `datetime` datetime NOT NULL,
+  `hobolink_datetime` datetime NOT NULL,
+  `usgs_datetime` datetime NOT NULL,
+  `lg_prb_R2_pct` double DEFAULT NULL,
+  `lg_prb_R3_pct` double DEFAULT NULL,
+  `lg_prb_R4_pct` double DEFAULT NULL,
+  `li_conc_LF_cfu` double DEFAULT NULL,
+  `lg_prb_LF_pct` double DEFAULT NULL,
+  `cso_CP` double DEFAULT NULL,
+  `cyano_NewtonYC` double DEFAULT NULL,
+  `cyano_WatertownYC` double DEFAULT NULL,
+  `cyano_CommRowing` double DEFAULT NULL,
+  `cyano_CRCK` double DEFAULT NULL,
+  `cyano_HarvardWeld` double DEFAULT NULL,
+  `cyano_RiversideBC` double DEFAULT NULL,
+  `cyano_CRYC` double DEFAULT NULL,
+  `cyano_UnionBC` double DEFAULT NULL,
+  `cyano_CommBoating` double DEFAULT NULL,
+  `cyano_CRCKKendall` double DEFAULT NULL,
+  `watertemp_F` double DEFAULT NULL,
+  `airtemp_F` double DEFAULT NULL,
+  `rain_in` double DEFAULT NULL,
+  `windspeed_mph` double DEFAULT NULL,
+  `par_uE` double DEFAULT NULL,
+  `flow_cfs` double DEFAULT NULL,
+  `WtmpD1` double DEFAULT NULL,
+  `AtmpD1` double DEFAULT NULL,
+  `WindD1` double DEFAULT NULL,
+  `PARD2` double DEFAULT NULL,
+  `RainD2` double DEFAULT NULL,
+  `RainD7` double DEFAULT NULL,
+  `FlowD1` double DEFAULT NULL,
+  `FlowD2` double DEFAULT NULL,
+  `HOURS` double DEFAULT NULL,
+  `24hr_cumulative_rainfall_at_HOURS` double DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
