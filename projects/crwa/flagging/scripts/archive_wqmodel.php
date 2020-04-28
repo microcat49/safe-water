@@ -15,9 +15,6 @@ date_default_timezone_set('America/New_York');
 $specialmsg = "" ;
 $corrections = 0 ;
 
-
-const TIME_SET = 'time_set';
-
 function archive_wqmodel($repost) {
 		//runs each of the archiving and model calc jobs and updates archiving log
 		set_time_limit(250);
