@@ -540,16 +540,10 @@ function read_boatingmodel($days) {
 		$wqdb->close();
 
 		//return data as single response array
-		$response = array() ;
+		$response = array();
 		$response[0] = $startdatestring ;
 		$response[1] = $enddatestring ;
-		$response[2] = $timeset ;
-		$response[3] = $wtmpset ;
-		$response[4] = $atmpset ; //update 2015
-		$response[5] = $rainset ;
-		$response[6] = $daysset ;
-		$response[7] = $hoursset ;
-		$response[8] = $windset ;
+		$response[3] = $timeset ;
 		$response[9] = $flowset ;
 		$response[10] = $parset ;
 		$response[11] = $Log_R2_set ;//update 2015
@@ -569,9 +563,11 @@ function read_boatingmodel($days) {
 		$response[23] = $cyano_CRYC_set ;
 		$response[24] = $cyano_UBC_set ;
 		$response[25] = $cyano_CB_set ;
-		$response[26] = $cyano_CRCKK_set ;		
-                return $response ;
+		$response[26] = $cyano_CRCKK_set ;
+
+        return $response ;
                 
 }
+
 
 ?>

@@ -46,38 +46,13 @@
 		// alternate function that uses HOBOLINK data is read_boatingmodel2()
 		//$arrayset = read_boatingmodel($days) ;
 		$arrayset = read_boatingmodel($days) ;
-		// var_dump($arrayset);
-		// exit();
+
 		//$startdate = $arrayset[0] ;
 		//$enddate = $arrayset[1] ;
-		$timeset = $arrayset[2] ;
-		$wtmpset = $arrayset[3] ;
-		$atmpset = $arrayset[4] ;
-		$rainset = $arrayset[5] ;
-		$daysset = $arrayset[6] ;
-		$windset = $arrayset[7] ;
-		$flowset = $arrayset[8] ;
-		$parset = $arrayset[9] ;
-		$Log_R2_set = $arrayset[10] ;
-		$Log_R3_set = $arrayset[11] ;
-		$Log_R4_set = $arrayset[12] ;
-		$Lin_LF_set = $arrayset[13] ;
-		$Log_LF_set = $arrayset[14] ;
-		$cso_CP_set = $arrayset[15] ;
-		$cyano_NYC_set = $arrayset[16] ;
-		$cyano_WYC_set = $arrayset[17] ;
-		$cyano_CR_set = $arrayset[18] ;
-		$cyano_CRCK_set = $arrayset[19] ;
-		$cyano_HW_set = $arrayset[20] ;
-		$cyano_RBC_set = $arrayset[21] ;
-		$cyano_CRYC_set = $arrayset[22] ;
-		$cyano_UBC_set = $arrayset[23] ;
-		$cyano_CB_set = $arrayset[24] ;
-		$cyano_CRCKK_set = $arrayset[25] ;
+
 
 		// leaving this in, don't know what element 11 is
 		// but this var is called later.
-		$Log_NBBU_set = $arrayset[11] ;
 		// PREVIOUS CODE ///////////////////////////
 		// $Lin_NBBU_set = $arrayset[9] ;
 		// $Lin_LF_set = $arrayset[10] ;
@@ -94,43 +69,39 @@
 		// $cyano_CB_set = $arrayset[22] ;
 		// $cyano_CRCKK_set = $arrayset[23] ;
 		///////////////////////////////////////////
-		$last = 0 ; $lastday = 0 ; $key = 0 ;
-		foreach ($timeset as $i) {
-			if (strtotime($i)==TRUE) {
-				$last = $key;
-				if (date("G",strtotime($i)) == 23) {
-					$lastday = $key ;
-				}
+		$last_boat_model = null;
+		foreach ($arrayset as $i) {
+			if (strtotime($i->timeset)==TRUE) {
+				$last_boat_model = $i;
 			}
-			$key++ ;
 		}
 		$boathouse = array("Newton Yacht Club","Watertown Yacht Club","Community Rowing, Inc.","CRCK at Herter Park","Harvard's Weld Boathouse","Riverside Boat Club","Charles River Yacht Club","Union Boat Club","Community Boating","CRCK at Kendall Square") ;
-		$boathouse_set = array($cyano_NYC_set,$cyano_WYC_set,$cyano_CR_set,$cyano_CRCK_set,$cyano_HW_set,$cyano_RBC_set,$cyano_CRYC_set,$cyano_UBC_set,$cyano_CB_set,$cyano_CRCKK_set) ;
 		$upper = 6; //First # of locations in boathouse array that are in upper Charles
 
 		//Assign flags
 		$flag = array(); $img = array(); $comment = array();
 		$linear = array(); $logistic = array();
 		for ($x=0;$x<count($boathouse);$x++) {
-			$flag[$x] = "Blue" ; $img[$x] = "../images/blue_flag.jpg" ; $comment[$x] = "(safe for boating)" ;
+			$flag[$x] = "Blue" ;
+			$img[$x] = "../images/blue_flag.jpg" ;
+			$comment[$x] = "(safe for boating)" ;
 			$uprCh = TRUE ;
-			if ($x<$upper) {$uprCh = TRUE;} else {$uprCh = FALSE;}
-			if ($uprCh) {
-				$linear[$x] = round($Lin_NBBU_set[$last]);
-				$logistic[$x] = round($Log_NBBU_set[$last]*100);
+			if ($x<$upper) {
+			    $uprCh = TRUE;
 			} else {
-				$linear[$x] = round($Lin_LF_set[$last]);
-				$logistic[$x] = round($Log_LF_set[$last]*100);
+			    $uprCh = FALSE;
 			}
+
+
 			// realigned arguments
 			// runflaglogic is in ../scripts/archive_repeatingcode.php
 			$flaginfo = runflaglogic(
 				$uprCh,
-				$Log_R2_set[$last],
-				$Log_R3_set[$last],
-				$Log_R4_set[$last],
-				$Lin_LF_set[$last],
-				$Log_LF_set[$last],
+                $last_boat_model->Log_R2_set,
+				$last_boat_model->Log_R3_set,
+				$last_boat_model->Log_R4_set,
+				$last_boat_model->Lin_LF_set,
+				$last_boat_model->Log_LF_set,
 				0,0,0,0); // zeroes used, cannot guess corresponding var names
 
 				// ** SEE archive_repeatingcode.php "function runflaglogic"
@@ -144,18 +115,24 @@
 				// 0,
 				// 0); ////////////////////////////////
 			switch ($flaginfo[0]) {
-				case "blue": $flag[$x] = "Blue" ; $img[$x] = "../images/blue_flag.jpg" ; break ;
+				case "blue":
+				    $flag[$x] = "Blue" ;
+				    $img[$x] = "../images/blue_flag.jpg" ;
+				    break ;
 				case "yellow":
-					$flag[$x] = "Yellow" ; $img[$x] = "../images/yellow_flag.jpg" ;
-					if ($flaginfo[1] = "cyano") { $comment[$x] = "(cyanobacteria)" ;}
+					$flag[$x] = "Yellow" ;
+					$img[$x] = "../images/yellow_flag.jpg" ;
+					if ($flaginfo[1] = "cyano") {
+					    $comment[$x] = "(cyanobacteria)" ;
+					}
 					break ;
 				case "red":
-					$flag[$x] = "Red" ; $img[$x] = "../images/red_flag.jpg" ;
+					$flag[$x] = "Red" ;
+					$img[$x] = "../images/red_flag.jpg" ;
 					switch ($flaginfo[1]) {
 						case "model": $comment[$x] = "(health risk)" ; break ;
 						case "cso": $comment[$x] = "(CSO)" ; break ;
 					}
-					$linear[$x] = "-"; $logistic[$x] = "-";
 					break ;
 			}
 		}
@@ -163,7 +140,7 @@
 		//Print Flags
 		echo "<table class=\"flags\" style=\"padding-left: 30px\">" ;
 		echo "<tr valign=\"bottom\">
-			<td width=\"190\"><span class=\"bold\">As of: " . strftime("%m/%d/%y %H:%M",strtotime($timeset[$last])+59*60) . "</span></td>
+			<td width=\"190\"><span class=\"bold\">As of: " . strftime("%m/%d/%y %H:%M",strtotime($last_boat_model->timeset)+59*60) . "</span></td>
 			<td width=\"100\"></td>
 			<td width=\"120\"><span class=\"und\">Modeled Concentration</span></td>
 			<td width=\"120\"><span class=\"und\">Probability of Exceedance</span></td>
@@ -171,7 +148,6 @@
 		for ($x=0;$x<count($boathouse);$x++) {
 			echo "<tr height=\"100\" valign=\"bottom\"><td class=\"label\">&nbsp&nbsp&nbsp" . $boathouse[$x] . "</td><td class=\"pic\"><img src=\"" . $img[$x] . "\"
 				width=\"18\"/></td>
-				<td>" . $linear[$x] . "&nbsp;cfu</td><td>" . $logistic[$x] . "%</td>
 				<td>" . $flag[$x] . "&nbsp;" . $comment[$x] . "</td></tr>" ;
 		}
 		echo "</table><br/><br/>" ;

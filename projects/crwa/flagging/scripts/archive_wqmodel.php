@@ -15,6 +15,9 @@ date_default_timezone_set('America/New_York');
 $specialmsg = "" ;
 $corrections = 0 ;
 
+
+const TIME_SET = 'time_set';
+
 function archive_wqmodel($repost) {
 		//runs each of the archiving and model calc jobs and updates archiving log
 		set_time_limit(250);
@@ -1009,39 +1012,14 @@ function read_boatingmodel($days) {
 		$enddate = mktime(date("G"), 0, 0, date("m")  , date("d"), date("Y")) ;
 		//$startdate = mktime(0, 0, 0, 8  , 15-$days, 2013); //use if frozen date
 		//$enddate = mktime(23, 0, 0, 8  , 15, 2013) ; //use if frozen date
-		$timeset = array() ;
-		$wtmpset = array() ;
-		$atmpset = array() ;//2015 update
-		$rainset = array() ;
-		$daysset = array() ;
-		$windset = array() ;
-		$flowset = array() ;
-		$parset = array() ;
-		//$Lin_NBBU_set = array() ;
-		//$Log_NBBU_set = array() ;
-		$Log_R2_set = array() ; //2015 update
-		$Log_R3_set = array() ; //2015 update
-		$Log_R4_set = array() ; //2015 update
-		$Lin_LF_set = array() ;
-		$Log_LF_set = array() ;
-		$cso_CP_set = array() ;
-		$cyano_NYC_set = array() ;
-		$cyano_WYC_set = array() ;
-		$cyano_CR_set = array() ;
-		$cyano_CRCK_set = array() ;
-		$cyano_HW_set = array() ;
-		$cyano_RBC_set = array() ;
-		$cyano_CRYC_set = array() ;
-		$cyano_UBC_set = array() ;
-		$cyano_CB_set = array() ;
-		$cyano_CRCKK_set = array() ;
+
 
 		//read data from database
 		$modeltable = "crwa_notification.modeldata";
 
 
 
-		$wqdb = new mysqli("notification.crwa.org", $dbuser, $dbpw, "crwa_notification");
+		$wqdb = new mysqli("localhost", $dbuser, $dbpw, "crwa_notification");
 		if ($wqdb->connect_error) {
     		echo "Not able to connect to database <br/>";
 			exit;
@@ -1050,82 +1028,91 @@ function read_boatingmodel($days) {
 		$loc = "Charles";
 		$startdatestring = strftime("%Y-%m-%d %H:%M:%S",$startdate);
 		$enddatestring = strftime("%Y-%m-%d %H:%M:%S",$enddate);
-		$statement = $wqdb->query("SELECT datetime,watertemp_C,airtemp_C,rain_in,raindays,windspeed_mph,flow_cfs,par_uE,lg_prb_R2_pct,lg_prb_R3_pct,lg_prb_R4_pct,li_conc_LF_cfu,lg_prb_LF_pct,cso_CP,cyano_NewtonYC,cyano_WatertownYC,cyano_CommRowing,cyano_CRCK,cyano_HarvardWeld,cyano_RiversideBC,cyano_CRYC,cyano_UnionBC,cyano_CommBoating,cyano_CRCKKendall FROM $modeltable WHERE location='$loc' AND datetime>=TIMESTAMP('$startdatestring') AND datetime<=TIMESTAMP('$enddatestring') ORDER BY datetime");
+		$statement = $wqdb->query("SELECT 
+											id,
+											location, 
+										 	datetime, 
+											hobolink_datetime, 
+											usgs_datetime, 
+											lg_prb_R2_pct, 
+											lg_prb_R3_pct, 
+											lg_prb_R4_pct,
+										 	li_conc_LF_cfu, 
+										 	lg_prb_LF_pct, 
+										 	cyano_NewtonYC,
+  											cyano_WatertownYC,
+  											cyano_CommRowing,
+  											cyano_CRCK,
+  											cyano_HarvardWeld,
+  											cyano_RiversideBC,
+  											cyano_CRYC,
+  											cyano_UnionBC,
+  											cyano_CommBoating,
+  											cyano_CRCKKendall
+										FROM  crwa_notification_model_results
+										WHERE location = '$loc' AND 
+											datetime >= TIMESTAMP('$startdatestring') AND 
+											datetime <= TIMESTAMP('$enddatestring') 
+										ORDER BY datetime");
 		//$statement = $wqdb->query("SELECT datetime,watertemp_C,rain_in,raindays,windspeed_mph,flow_cfs,par_uE,li_conc_NBBU_cfu,li_conc_LF_cfu,lg_prb_NBBU_pct,lg_prb_LF_pct,cso_CP,cyano_NewtonYC,cyano_WatertownYC,cyano_CommRowing,cyano_CRCK,cyano_HarvardWeld,cyano_RiversideBC,cyano_CRYC,cyano_UnionBC,cyano_CommBoating,cyano_CRCKKendall FROM $modeltable WHERE location='$loc' AND datetime>=TIMESTAMP('$startdatestring') AND datetime<=TIMESTAMP('$enddatestring') ORDER BY datetime");
 		if ($wqdb->error) {
 			echo "Corrupted database.<br/>" ;
 			exit ;
 		}
 
+		$boating_model_entries = [];
 		while($row = $statement->fetch_assoc()){
+			$Boating_Model_Entry = new Boating_Model_Entry();
+
 			$thistime = strtotime($row['datetime']) ;
 			$indx = round(($thistime - $startdate) / (60*60)) ;
-			$timeset[$indx] = strftime("%Y-%m-%d %H:%M:%S",$thistime) ;
-			$wtmpset[$indx] = $row['watertemp_C'] ;
-			$atmpset[$indx] = $row['airtemp_C'] ; //2015 update
-			$rainset[$indx] = $row['rain_in'] ;
-			$daysset[$indx] = $row['raindays'] ;
-			$windset[$indx] = $row['windspeed_mph'] ;
-			$flowset[$indx] = $row['flow_cfs'] ;
-			$parset[$indx] = $row['par_uE'] ;
-			//$Lin_NBBU_set[$indx] = $row['li_conc_NBBU_cfu'] ;
-			//$Log_NBBU_set[$indx] = $row['lg_prb_NBBU_pct'] ;
-			$Log_R2_set[$indx] = $row['lg_prb_R2_pct'] ; //2015 update
-			$Log_R3_set[$indx] = $row['lg_prb_R3_pct'] ; //2015 update
-			$Log_R4_set[$indx] = $row['lg_prb_R4_pct'] ; //2015 update
-			$Lin_LF_set[$indx] = $row['li_conc_LF_cfu'] ;
-			$Log_LF_set[$indx] = $row['lg_prb_LF_pct'] ;
-			$cso_CP_set[$indx] = $row['cso_CP'] ;
-			$cyano_NYC_set[$indx] = $row['cyano_NewtonYC'] ;
-			$cyano_WYC_set[$indx] = $row['cyano_WatertownYC'] ;
-			$cyano_CR_set[$indx] = $row['cyano_CommRowing'] ;
-			$cyano_CRCK_set[$indx] = $row['cyano_CRCK'] ;
-			$cyano_HW_set[$indx] = $row['cyano_HarvardWeld'] ;
-			$cyano_RBC_set[$indx] = $row['cyano_RiversideBC'] ;
-			$cyano_CRYC_set[$indx] = $row['cyano_CRYC'] ;
-			$cyano_UBC_set[$indx] = $row['cyano_UnionBC'] ;
-			$cyano_CB_set[$indx] = $row['cyano_CommBoating'] ;
-			$cyano_CRCKK_set[$indx] = $row['cyano_CRCKKendall'] ;
-			if (($thistime != $lasttime + 60*60)&&($indx > 0)) {
-				echo "Hours missing in model database.<br/>" ;
-				exit;
-			}
+			$Boating_Model_Entry->timeset = strftime("%Y-%m-%d %H:%M:%S",$thistime) ;
+			$Boating_Model_Entry->Log_R2_set[$indx] = $row['lg_prb_R2_pct'] ; //2015 update
+			$Boating_Model_Entry->Log_R3_set[$indx] = $row['lg_prb_R3_pct'] ; //2015 update
+			$Boating_Model_Entry->Log_R4_set[$indx] = $row['lg_prb_R4_pct'] ; //2015 update
+			$Boating_Model_Entry->Lin_LF_set[$indx] = $row['li_conc_LF_cfu'] ;
+			$Boating_Model_Entry->Log_LF_set[$indx] = $row['lg_prb_LF_pct'] ;
+			$Boating_Model_Entry->cyano_NYC_set[$indx] = $row['cyano_NewtonYC'] ;
+			$Boating_Model_Entry->cyano_WYC_set[$indx] = $row['cyano_WatertownYC'] ;
+			$Boating_Model_Entry->cyano_CR_set[$indx] = $row['cyano_CommRowing'] ;
+			$Boating_Model_Entry->cyano_CRCK_set[$indx] = $row['cyano_CRCK'] ;
+			$Boating_Model_Entry->cyano_HW_set[$indx] = $row['cyano_HarvardWeld'] ;
+			$Boating_Model_Entry->cyano_RBC_set[$indx] = $row['cyano_RiversideBC'] ;
+			$Boating_Model_Entry->cyano_CRYC_set[$indx] = $row['cyano_CRYC'] ;
+			$Boating_Model_Entry->cyano_UBC_set[$indx] = $row['cyano_UnionBC'] ;
+			$Boating_Model_Entry->cyano_CB_set[$indx] = $row['cyano_CommBoating'] ;
+			$Boating_Model_Entry->cyano_CRCKK_set[$indx] = $row['cyano_CRCKKendall'] ;
+//			if (($thistime != $lasttime + 60*60)&&($indx > 0)) {
+//				echo "Hours missing in model database.<br/>" ;
+//				exit;
+//			}
 			$lasttime = $thistime ;
+
+			array_push($boating_model_entries, $Boating_Model_Entry);
 		}
 		$statement->free();
 		$wqdb->close();
 
 		//return data as single response array
-		$response = array() ;
-		$response[0] = $startdatestring ;
-		$response[1] = $enddatestring ;
-		$response[2] = $timeset ;
-		$response[3] = $wtmpset ;
-		$response[4] = $atmpset ; //update 2015
-		$response[5] = $rainset ;
-		$response[6] = $daysset ;
-		$response[7] = $windset ;
-		$response[8] = $flowset ;
-		$response[9] = $parset ;
-		$response[10] = $Log_R2_set ;//update 2015
-		$response[11] = $Log_R3_set ;//update 2015
-		$response[12] = $Log_R4_set ;//update 2015
-		//$response[9] = $Lin_NBBU_set ;
-		//$response[11] = $Log_NBBU_set ;
-		$response[13] = $Lin_LF_set ;
-		$response[14] = $Log_LF_set ;
-		$response[15] = $cso_CP_set ;
-		$response[16] = $cyano_NYC_set ;
-		$response[17] = $cyano_WYC_set ;
-		$response[18] = $cyano_CR_set ;
-		$response[19] = $cyano_CRCK_set ;
-		$response[20] = $cyano_HW_set ;
-		$response[21] = $cyano_RBC_set ;
-		$response[22] = $cyano_CRYC_set ;
-		$response[23] = $cyano_UBC_set ;
-		$response[24] = $cyano_CB_set ;
-		$response[25] = $cyano_CRCKK_set ;
-		return $response ;
-}
 
+		return $boating_model_entries;
+}
+class Boating_Model_Entry {
+	public $timeset;
+	public $Log_R2_set; //2015 update
+	public $Log_R3_set;
+	public $Log_R4_set; //2015 update
+	public $Lin_LF_set;
+	public $Log_LF_set;
+	public $cyano_NYC_set;
+	public $cyano_WYC_set;
+	public $cyano_CR_set;
+	public $cyano_CRCK_set;
+	public $cyano_HW_set;
+	public $cyano_RBC_set;
+	public $cyano_CRYC_set;
+	public $cyano_UBC_set;
+	public $cyano_CB_set;
+	public $cyano_CRCKK_set;
+}
 ?>
